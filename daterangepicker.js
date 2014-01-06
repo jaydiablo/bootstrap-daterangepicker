@@ -34,6 +34,7 @@
 
         this.format = 'MM/DD/YYYY';
         this.separator = ' - ';
+        this.condenseSameDay = false;
 
         this.locale = {
             applyLabel: 'Apply',
@@ -115,6 +116,9 @@
 
             if (typeof options.separator == 'string')
                 this.separator = options.separator;
+
+            if (typeof options.condenseSameDay == 'boolean')
+                this.condenseSameDay = options.condenseSameDay;
 
             if (typeof options.startDate == 'string')
                 this.startDate = moment(options.startDate, this.format);
@@ -268,6 +272,9 @@
                 if (split.length == 2) {
                     start = moment(split[0], this.format);
                     end = moment(split[1], this.format);
+                } else if (split.length == 1) {
+                    start = moment(split[0], this.format);
+                    end = moment(split[0], this.format);
                 }
                 if (start != null && end != null) {
                     this.startDate = start;
@@ -347,9 +354,17 @@
             if (!this.element.is('input')) return;
             if (!this.element.val().length) return;
 
-            var dateString = this.element.val().split(this.separator);
-            var start = moment(dateString[0], this.format);
-            var end = moment(dateString[1], this.format);
+            var dateString = this.element.val().split(this.separator),
+                start,
+                end;
+
+            if (dateString.length == 2) {
+                start = moment(dateString[0], this.format);
+                end = moment(dateString[1], this.format);
+            } else if (dateString.length == 1) {
+                start = moment(dateString[0], this.format);
+                end = moment(dateString[0], this.format);
+            }
 
             if (start == null || end == null) return;
             if (end.isBefore(start)) return;
@@ -446,8 +461,13 @@
         },
 
         updateInputText: function() {
-            if (this.element.is('input'))
-                this.element.val(this.startDate.format(this.format) + this.separator + this.endDate.format(this.format));
+            if (this.element.is('input')) {
+                if (this.condenseSameDay && this.startDate.format(this.format) == this.endDate.format(this.format)) {
+                    this.element.val(this.startDate.format(this.format));
+                } else {
+                    this.element.val(this.startDate.format(this.format) + this.separator + this.endDate.format(this.format));
+                }
+            }
         },
 
         clickRange: function (e) {
@@ -457,6 +477,8 @@
             } else {
                 var dates = this.ranges[label];
 
+                this.oldStartDate = this.startDate.clone();
+                this.oldEndDate = this.endDate.clone();
                 this.startDate = dates[0];
                 this.endDate = dates[1];
 
